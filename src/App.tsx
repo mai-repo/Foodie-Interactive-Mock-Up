@@ -140,9 +140,9 @@ export default function App() {
           </button>
         </nav>
 
-        <div className="mt-auto p-1 xl:p-4">
+        <div className="mt-auto">
           <div className="hidden xl:flex items-center justify-between p-3 glass-panel bg-white/40">
-            <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex items-center gap-3 overflow-hidden min-w-0 flex-1">
               <img
                 src={USER_PROFILE.avatar}
                 alt={USER_PROFILE.name}
