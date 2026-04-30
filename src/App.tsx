@@ -72,7 +72,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-brand-bg font-sans overflow-hidden">
+    <div className="relative flex h-screen bg-brand-bg font-sans overflow-hidden">
       <AnimatePresence>
         {showOnboarding && (
           <OnboardingOverlay
@@ -478,7 +478,7 @@ function BuyerProfileSidebar({ buyer: initialBuyer, onClose, elevated = false }:
       initial={{ x: '100%' }}
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
-      className={`w-full md:w-64 xl:w-80 border-l border-gray-200 bg-white flex flex-col overflow-hidden shadow-2xl relative ${elevated ? 'z-[110]' : 'z-40'}`}
+      className={`absolute right-0 top-0 bottom-0 w-full md:w-64 xl:w-80 border-l border-gray-200 bg-white flex flex-col overflow-hidden shadow-2xl ${elevated ? 'z-[110]' : 'z-40'}`}
     >
       <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
         <h3 className="font-bold font-display text-gray-900">Buyer Profile</h3>
@@ -1177,11 +1177,12 @@ function MessageDetailView({
 
         {/* AI Suggestion Area (Draft Editor) - NOW STICKY AT BOTTOM */}
         {message.type === 'inbound' && message.aiDraft && !isSent && (
-          <div id="ai-draft-area" className="px-4 xl:px-8 pb-20 md:pb-4 xl:pb-8 z-20">
+          <div className="px-4 xl:px-8 pb-20 md:pb-4 xl:pb-8 z-20">
+            <div id="ai-draft-area" className="w-full max-w-3xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl shadow-gray-200/50"
+              className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl shadow-gray-200/50"
             >
               <div className="bg-white px-4 xl:px-8 py-3 xl:py-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -1255,6 +1256,7 @@ function MessageDetailView({
                  </div>
               </div>
             </motion.div>
+            </div>
           </div>
         )}
       </div>
@@ -1706,19 +1708,6 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile,
           onClick={handleNext}
           style={{ cursor: 'pointer' }}
         />
-        {bounds && (
-          <rect
-            x={bounds.x - 8}
-            y={bounds.y - 8}
-            width={bounds.width + 16}
-            height={bounds.height + 16}
-            rx="12"
-            fill="none"
-            stroke="rgba(241,110,54,0.8)"
-            strokeWidth="2.5"
-            pointerEvents="none"
-          />
-        )}
       </svg>
 
       {/* Tooltip */}
