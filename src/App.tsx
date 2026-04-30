@@ -13,7 +13,6 @@ import {
   Search, 
   Sparkles, 
   ArrowRight,
-  MoreVertical,
   Calendar,
   History,
   Edit2,
@@ -52,6 +51,7 @@ export default function App() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [selectedBuyerIdForProfile, setSelectedBuyerIdForProfile] = useState<string | null>(null);
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
 
   const activeMessage = useMemo(() => 
     messages.find(m => m.id === selectedMessageId), 
@@ -75,14 +75,19 @@ export default function App() {
     <div className="flex h-screen bg-brand-bg font-sans overflow-hidden">
       <AnimatePresence>
         {showOnboarding && (
-          <OnboardingOverlay 
-            onComplete={() => setShowOnboarding(false)} 
+          <OnboardingOverlay
+            onComplete={() => setShowOnboarding(false)}
             setView={setView}
+            onOpenProfile={() => {
+              setSelectedBuyerIdForProfile(activeMessage?.buyerId || null);
+              setShowProfile(true);
+            }}
+            onCloseProfile={() => setShowProfile(false)}
           />
         )}
       </AnimatePresence>
       {/* Sidebar navigation */}
-      <aside className="w-16 xl:w-56 border-r border-gray-200 flex flex-col p-2 xl:p-4 bg-gray-50/50">
+      <aside className="hidden md:flex w-16 xl:w-56 border-r border-gray-200 flex-col p-2 xl:p-4 bg-gray-50/50">
         <div className="flex items-center justify-center xl:justify-start gap-2 px-1 xl:px-3 mb-6 xl:mb-8">
           <div className="w-8 h-8 bg-brand-orange rounded-lg flex items-center justify-center text-white font-bold text-xl font-display flex-shrink-0">
             F
@@ -116,6 +121,7 @@ export default function App() {
             <span className="hidden xl:inline">Campaigns</span>
           </button>
           <button
+            id="nav-profiles"
             onClick={() => setView('profiles')}
             className={`sidebar-link w-full justify-center xl:justify-start ${view === 'profiles' ? 'active' : ''}`}
             title="Profile"
@@ -178,37 +184,43 @@ export default function App() {
               className="flex-1 flex overflow-hidden"
               id="message-view"
             >
-              <InboxListView 
-                id="message-list"
-                messages={messages} 
-                selectedId={selectedMessageId} 
-                onSelect={(id) => {
-                  setSelectedMessageId(id);
-                  setView('inbox');
-                }}
-                onToggleProfile={(id) => {
-                   setSelectedBuyerIdForProfile(id);
-                   setShowProfile(true);
-                }}
-              />
-              <MessageDetailView 
-                message={activeMessage} 
-                setView={setView} 
-                showProfile={showProfile}
-                onToggleProfile={() => {
-                  setSelectedBuyerIdForProfile(activeMessage?.buyerId || null);
-                  setShowProfile(!showProfile);
-                }}
-                onMessageSent={(id, finalContent) => {
-                  setMessages(prev => prev.map(m => m.id === id ? { 
-                    ...m, 
-                    type: 'outbound' as const,
-                    content: finalContent,
-                    aiDraft: undefined
-                  } : m));
-                  setSelectedMessageId(null);
-                }}
-              />
+              <div className={`${showMobileDetail ? 'hidden md:block' : 'block'} md:block w-full md:w-auto shrink-0`}>
+                <InboxListView
+                  id="message-list"
+                  messages={messages}
+                  selectedId={selectedMessageId}
+                  onSelect={(id) => {
+                    setSelectedMessageId(id);
+                    setView('inbox');
+                    setShowMobileDetail(true);
+                  }}
+                  onToggleProfile={(id) => {
+                     setSelectedBuyerIdForProfile(id);
+                     setShowProfile(true);
+                  }}
+                />
+              </div>
+              <div className={`${showMobileDetail ? 'flex' : 'hidden md:flex'} flex-1 min-w-0 overflow-hidden`}>
+                <MessageDetailView
+                  message={activeMessage}
+                  setView={setView}
+                  showProfile={showProfile}
+                  onToggleProfile={() => {
+                    setSelectedBuyerIdForProfile(activeMessage?.buyerId || null);
+                    setShowProfile(!showProfile);
+                  }}
+                  onMessageSent={(id, finalContent) => {
+                    setMessages(prev => prev.map(m => m.id === id ? {
+                      ...m,
+                      type: 'outbound' as const,
+                      content: finalContent,
+                      aiDraft: undefined
+                    } : m));
+                    setSelectedMessageId(null);
+                  }}
+                  onBack={() => setShowMobileDetail(false)}
+                />
+              </div>
             </motion.div>
           )}
 
@@ -244,18 +256,18 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex-1 flex flex-col p-8 overflow-y-auto"
+              className="flex-1 flex flex-col p-4 xl:p-8 overflow-y-auto pb-20 md:pb-8"
             >
               <div className="max-w-4xl mx-auto w-full">
-                <div className="flex items-center gap-6 mb-12">
-                  <img 
-                    src={USER_PROFILE.avatar} 
-                    alt={USER_PROFILE.name} 
-                    className="w-24 h-24 rounded-2xl object-cover shadow-sm border border-gray-100"
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 xl:gap-6 mb-6 xl:mb-12 text-center sm:text-left">
+                  <img
+                    src={USER_PROFILE.avatar}
+                    alt={USER_PROFILE.name}
+                    className="w-16 h-16 xl:w-24 xl:h-24 rounded-2xl object-cover shadow-sm border border-gray-100"
                     referrerPolicy="no-referrer"
                   />
                   <div>
-                    <h1 className="text-4xl font-bold font-display mb-1">{USER_PROFILE.name}</h1>
+                    <h1 className="text-2xl xl:text-4xl font-bold font-display mb-1">{USER_PROFILE.name}</h1>
                     <p className="text-gray-500 font-medium">Senior {USER_PROFILE.role} &bull; Specialty Foods Division</p>
                     <div className="flex gap-4 mt-4">
                       <div className="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-semibold text-gray-600 shadow-sm flex items-center gap-2">
@@ -317,7 +329,7 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex-1 flex flex-col p-8 overflow-y-auto"
+              className="flex-1 flex flex-col p-4 xl:p-8 overflow-y-auto pb-20 md:pb-8"
             >
               <SettingsView onLogout={() => setIsAuthenticated(false)} />
             </motion.div>
@@ -325,15 +337,48 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      {/* Mobile bottom navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 shadow-lg">
+        <button
+          onClick={() => { setView('inbox'); setShowMobileDetail(false); }}
+          className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'inbox' ? 'text-brand-orange' : 'text-gray-400'}`}
+        >
+          <Inbox size={22} />
+          <span className="text-[10px] font-bold">Buyers</span>
+        </button>
+        <button
+          onClick={() => { setView('campaigns'); setSelectedCampaignId(null); }}
+          className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'campaigns' ? 'text-brand-orange' : 'text-gray-400'}`}
+        >
+          <PieChart size={22} />
+          <span className="text-[10px] font-bold">Campaigns</span>
+        </button>
+        <button
+          onClick={() => setView('profiles')}
+          className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'profiles' ? 'text-brand-orange' : 'text-gray-400'}`}
+        >
+          <Users size={22} />
+          <span className="text-[10px] font-bold">Profile</span>
+        </button>
+        <button
+          onClick={() => setView('settings')}
+          className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'settings' ? 'text-brand-orange' : 'text-gray-400'}`}
+        >
+          <Settings size={22} />
+          <span className="text-[10px] font-bold">Settings</span>
+        </button>
+      </nav>
+
       {/* Slide-out Profile Sidebar */}
       <AnimatePresence>
         {showProfile && profileBuyer && (
-          <BuyerProfileSidebar 
-            buyer={profileBuyer} 
+          <BuyerProfileSidebar
+            buyer={profileBuyer}
             onClose={() => {
               setShowProfile(false);
               setSelectedBuyerIdForProfile(null);
-            }} 
+            }}
+            elevated={showOnboarding}
           />
         )}
       </AnimatePresence>
@@ -375,7 +420,7 @@ function SignalIcon({ signal, size = 14 }: { signal: BuyerSignal, size?: number,
 
   return (
     <div 
-      className="relative flex items-center justify-center cursor-help"
+      className="relative flex items-center justify-center cursor-default"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -415,7 +460,7 @@ function EngagementBar({ score }: { score: number }) {
   );
 }
 
-function BuyerProfileSidebar({ buyer: initialBuyer, onClose }: { buyer: Buyer, onClose: () => void }) {
+function BuyerProfileSidebar({ buyer: initialBuyer, onClose, elevated = false }: { buyer: Buyer, onClose: () => void, elevated?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [buyer, setBuyer] = useState(initialBuyer);
 
@@ -426,10 +471,10 @@ function BuyerProfileSidebar({ buyer: initialBuyer, onClose }: { buyer: Buyer, o
 
   return (
     <motion.aside 
-      initial={{ x: 350 }}
+      initial={{ x: '100%' }}
       animate={{ x: 0 }}
-      exit={{ x: 350 }}
-      className="w-80 border-l border-gray-200 bg-white flex flex-col overflow-hidden shadow-2xl relative z-40"
+      exit={{ x: '100%' }}
+      className={`w-full md:w-64 xl:w-80 border-l border-gray-200 bg-white flex flex-col overflow-hidden shadow-2xl relative ${elevated ? 'z-[110]' : 'z-40'}`}
     >
       <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
         <h3 className="font-bold font-display text-gray-900">Buyer Profile</h3>
@@ -593,35 +638,37 @@ function SettingsView({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="max-w-4xl mx-auto w-full">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display mb-2">Settings</h1>
+      <div className="mb-6 xl:mb-8">
+        <h1 className="text-2xl xl:text-3xl font-bold font-display mb-2">Settings</h1>
         <p className="text-gray-500">Manage your account preferences and system configurations.</p>
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex flex-col md:flex-row gap-4 xl:gap-8">
         {/* Navigation Tabs */}
-        <div className="w-64 space-y-1">
-          <button 
+        <div className="shrink-0 md:w-36 xl:w-48">
+          <div className="flex md:flex-col gap-1 overflow-x-auto pb-1 md:pb-0">
+          <button
             onClick={() => setActiveTab('profile')}
-            className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
+            className={`shrink-0 text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
           >
             Personal Profile
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('notifications')}
-            className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
+            className={`shrink-0 text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
           >
             Notifications
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('ai')}
-            className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'ai' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
+            className={`shrink-0 text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'ai' ? 'bg-brand-orange text-white' : 'text-gray-500 hover:bg-white hover:text-brand-orange'}`}
           >
             AI Agent Config
           </button>
-          
-          <div className="pt-8 border-t border-gray-100 mt-8">
-            <button 
+          </div>
+
+          <div className="hidden md:block pt-8 border-t border-gray-100 mt-8">
+            <button
               onClick={() => onLogout()}
               className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 transition-all flex items-center gap-2"
             >
@@ -820,7 +867,7 @@ function InboxListView({ messages, selectedId, onSelect, onToggleProfile, id }: 
   [messages, filter]);
 
   return (
-    <div id={id} className="w-56 xl:w-72 border-r border-gray-200 bg-white flex flex-col">
+    <div id={id} className="w-full md:w-56 xl:w-72 border-r border-gray-200 bg-white flex flex-col">
       <div className="p-4 border-b border-gray-100 space-y-4">
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button 
@@ -845,7 +892,7 @@ function InboxListView({ messages, selectedId, onSelect, onToggleProfile, id }: 
           />
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
         {filteredMessages.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">No messages found</div>
         ) : (
@@ -910,18 +957,20 @@ function InboxListView({ messages, selectedId, onSelect, onToggleProfile, id }: 
   );
 }
 
-function MessageDetailView({ 
-  message: initialMessage, 
-  setView, 
+function MessageDetailView({
+  message: initialMessage,
+  setView,
   showProfile,
   onToggleProfile,
-  onMessageSent 
-}: { 
-  message: Message | undefined; 
-  setView: (view: View) => void; 
+  onMessageSent,
+  onBack
+}: {
+  message: Message | undefined;
+  setView: (view: View) => void;
   showProfile: boolean;
   onToggleProfile: () => void;
-  onMessageSent: (id: string, content: string) => void 
+  onMessageSent: (id: string, content: string) => void;
+  onBack?: () => void;
 }) {
   const [message, setMessage] = useState<Message | undefined>(initialMessage);
   const [autosaveStatus, setAutosaveStatus] = useState<string | null>(null);
@@ -963,11 +1012,18 @@ function MessageDetailView({
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white shadow-sm z-10">
-          <div className="flex items-center gap-4">
-            <button 
+        <div className="p-4 xl:p-6 border-b border-gray-100 flex justify-between items-center bg-white shadow-sm z-10">
+          <div className="flex items-center gap-3 xl:gap-4 min-w-0">
+            <button
+              onClick={onBack}
+              className="md:hidden p-2 mr-1 hover:bg-gray-100 rounded-lg text-gray-500 shrink-0"
+            >
+              <ArrowRight size={20} className="rotate-180" />
+            </button>
+            <button
+              id="buyer-profile-toggle"
               onClick={onToggleProfile}
-              className="relative group cursor-pointer"
+              className="relative group cursor-pointer shrink-0"
               title="Toggle Buyer Profile"
             >
               {buyer?.avatar ? (
@@ -985,7 +1041,7 @@ function MessageDetailView({
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold font-display">{buyer?.company}</h2>
+                <h2 className="text-base xl:text-xl font-bold font-display truncate">{buyer?.company}</h2>
                 <div className="flex gap-1">
                   {buyer?.signals.map((s, idx) => (
                     <SignalIcon key={idx} signal={s} size={14} />
@@ -1008,13 +1064,12 @@ function MessageDetailView({
             >
               <Users size={20} />
             </button>
-            <button className="p-2 hover:bg-gray-50 rounded-lg text-gray-400"><MoreVertical size={20} /></button>
           </div>
         </div>
 
         {/* Thread */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50/10">
-          <div className="max-w-3xl mx-auto space-y-12 pb-20">
+        <div className="flex-1 overflow-y-auto p-4 xl:p-8 bg-gray-50/10">
+          <div className="max-w-3xl mx-auto space-y-12 pb-36 md:pb-20">
             <AnimatePresence>
               {feedbackMessage && (
                 <motion.div 
@@ -1118,13 +1173,13 @@ function MessageDetailView({
 
         {/* AI Suggestion Area (Draft Editor) - NOW STICKY AT BOTTOM */}
         {message.type === 'inbound' && message.aiDraft && !isSent && (
-          <div className="px-8 pb-8 z-20">
-            <motion.div 
+          <div id="ai-draft-area" className="px-4 xl:px-8 pb-20 md:pb-4 xl:pb-8 z-20">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl shadow-gray-200/50"
             >
-              <div className="bg-white px-8 py-4 flex items-center justify-between border-b border-gray-100">
+              <div className="bg-white px-4 xl:px-8 py-3 xl:py-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <Sparkles size={18} className="text-brand-orange" fill="currentColor" />
                   <span className="text-xs font-bold uppercase tracking-widest text-brand-orange">AI Draft Response</span>
@@ -1136,7 +1191,7 @@ function MessageDetailView({
                 </div>
               </div>
 
-              <div className="bg-brand-bg/50 px-8 py-4 border-b border-gray-100 flex items-start gap-4">
+              <div className="bg-brand-bg/50 px-4 xl:px-8 py-3 xl:py-4 border-b border-gray-100 flex items-start gap-4">
                 <div className="p-2 bg-white rounded-lg border border-brand-blue/20 text-brand-orange">
                   <Heart size={16} />
                 </div>
@@ -1161,9 +1216,9 @@ function MessageDetailView({
                 </div>
               </div>
               
-              <div className="p-8">
-                <textarea 
-                  className="w-full min-h-[120px] p-0 border-none focus:ring-0 text-gray-700 leading-relaxed text-base resize-none"
+              <div className="p-4 xl:p-8">
+                <textarea
+                  className="w-full min-h-[100px] xl:min-h-[120px] p-0 border-none focus:ring-0 text-gray-700 leading-relaxed text-sm xl:text-base resize-none"
                   value={message.aiDraft.content}
                   onChange={(e) => {
                     if (!message.aiDraft) return;
@@ -1182,7 +1237,7 @@ function MessageDetailView({
                 />
               </div>
               
-              <div className="bg-gray-50/80 px-8 py-4 flex justify-end items-center border-t border-gray-100">
+              <div className="bg-gray-50/80 px-4 xl:px-8 py-3 xl:py-4 flex justify-end items-center border-t border-gray-100">
                  <div className="flex gap-4 items-center">
                     <button className="px-6 h-10 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
                       Discard
@@ -1209,10 +1264,10 @@ function MessageDetailView({
 
 function CampaignListView({ campaigns, onSelect }: { campaigns: Campaign[], onSelect: (id: string) => void }) {
   return (
-    <div className="p-8 overflow-y-auto">
-      <div className="flex justify-between items-end mb-8">
+    <div className="p-4 xl:p-8 pb-20 md:pb-8 overflow-y-auto">
+      <div className="flex justify-between items-end mb-4 xl:mb-8">
         <div>
-          <h1 className="text-3xl font-bold font-display mb-2">Seasonal Campaigns</h1>
+          <h1 className="text-2xl xl:text-3xl font-bold font-display mb-2">Seasonal Campaigns</h1>
           <p className="text-gray-500">Run outbound personalized outreach for seasonal harvests.</p>
         </div>
         <button className="btn-primary">+ New Campaign</button>
@@ -1317,24 +1372,24 @@ function CampaignDetailView({ campaign: initialCampaign, onBack, onToggleProfile
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Header */}
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+      <div className="p-4 xl:p-6 border-b border-gray-100 flex flex-wrap gap-2 justify-between items-center">
+        <div className="flex items-center gap-3 xl:gap-4 min-w-0">
+          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 shrink-0">
             <ArrowRight size={20} className="rotate-180" />
           </button>
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-3 xl:gap-4 min-w-0">
+             <div className="w-10 h-10 xl:w-12 xl:h-12 rounded-xl overflow-hidden shadow-sm shrink-0">
                 <img src={campaign.productImage} className="w-full h-full object-cover" />
              </div>
-             <div>
-               <h2 className="text-2xl font-bold font-display">{campaign.name}</h2>
+             <div className="min-w-0">
+               <h2 className="text-lg xl:text-2xl font-bold font-display truncate">{campaign.name}</h2>
                <p className="text-sm text-gray-500 truncate max-w-md">
                  {campaign.description}
                </p>
              </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
           {isEditable && (
              <div className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-700 shadow-sm flex items-center gap-2">
                 <div className="w-2 h-2 bg-amber-400 rounded-full" />
@@ -1371,14 +1426,14 @@ function CampaignDetailView({ campaign: initialCampaign, onBack, onToggleProfile
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main List of Targeted Buyers */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white">
+        <div className="flex-1 overflow-y-auto p-4 xl:p-8 pb-20 md:pb-8 bg-white">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-12">
+            <div className="flex items-center justify-between mb-6 xl:mb-12">
               <div>
-                 <h3 className="font-bold text-2xl font-display">
+                 <h3 className="font-bold text-xl xl:text-2xl font-display">
                    Campaign Outreach
                  </h3>
-                 <p className="text-sm text-gray-500 mt-1">Personalize and review messages before launching the harvest campaign.</p>
+                 <p className="text-xs xl:text-sm text-gray-500 mt-1">Personalize and review messages before launching the harvest campaign.</p>
               </div>
               <div className="flex gap-2">
                 <button className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 shadow-sm flex items-center gap-2 hover:bg-gray-50">
@@ -1512,14 +1567,14 @@ function CampaignDetailView({ campaign: initialCampaign, onBack, onToggleProfile
   );
 }
 
-function OnboardingOverlay({ onComplete, setView }: { onComplete: () => void, setView: (v: View) => void }) {
+function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile }: { onComplete: () => void, setView: (v: View) => void, onOpenProfile: () => void, onCloseProfile: () => void }) {
   const [step, setStep] = useState(0);
   const [bounds, setBounds] = useState<DOMRect | null>(null);
 
   const steps = [
     {
       title: "Welcome to Foodie v2",
-      description: "We've rebuilt the Account Manager experience. Let's show you around.",
+      description: "We've rebuilt the Account Manager experience. Let's show you around the key features.",
       targetId: null,
       action: "Start Tour"
     },
@@ -1531,31 +1586,50 @@ function OnboardingOverlay({ onComplete, setView }: { onComplete: () => void, se
       onEnter: () => setView('inbox')
     },
     {
-      title: "Reactive Drafting",
-      description: "Every inquiry gets an automatic high-context draft. You just review and hit send.",
+      title: "Buyer Inquiries",
+      description: "Each row shows the buyer, their company, and context signals like VIP status or price sensitivity.",
       targetId: "onboarding-message",
-      action: "Next"
+      action: "Next",
+      onEnter: () => setView('inbox')
+    },
+    {
+      title: "Buyer Profile",
+      description: "Click the buyer's photo at the top of any conversation to instantly pull up their full profile: order history, engagement score, relationship notes, and AI tone preferences.",
+      targetId: "buyer-profile-toggle",
+      action: "Next",
+      onEnter: () => setTimeout(onOpenProfile, 200)
+    },
+    {
+      title: "AI Draft Response",
+      description: "Every inbound inquiry gets an AI-generated reply pre-loaded with relationship context. Edit the tone, tweak the copy, and hit Send. The AI learns from your changes.",
+      targetId: "ai-draft-area",
+      action: "Next",
+      onEnter: () => onCloseProfile()
     },
     {
       title: "Targeted Outreach",
-      description: "Launch bulk campaigns for new seasonal stock here.",
+      description: "Launch personalized bulk campaigns for seasonal harvests. The AI writes a unique draft for each buyer based on their order history.",
       targetId: "nav-campaigns",
       action: "Next",
       onEnter: () => setView('campaigns')
+    },
+    {
+      title: "Your Profile",
+      description: "Click the Profile icon anytime to see your portfolio value, draft campaigns, and pending outreach at a glance.",
+      targetId: "nav-profiles",
+      action: "Get Started",
+      onEnter: () => setView('profiles')
     }
   ];
 
   const currentStep = steps[step];
 
   useEffect(() => {
+    setBounds(null);
     const updateBounds = () => {
       if (currentStep.targetId) {
         const el = document.getElementById(currentStep.targetId);
-        if (el) {
-          setBounds(el.getBoundingClientRect());
-        }
-      } else {
-        setBounds(null);
+        if (el) setBounds(el.getBoundingClientRect());
       }
     };
 
@@ -1598,12 +1672,13 @@ function OnboardingOverlay({ onComplete, setView }: { onComplete: () => void, se
             )}
           </mask>
         </defs>
-        <rect 
-          width="100%" 
-          height="100%" 
-          fill="rgba(0,0,0,0.7)" 
-          mask="url(#onboarding-mask)" 
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(0,0,0,0.7)"
+          mask="url(#onboarding-mask)"
           onClick={handleNext}
+          style={{ cursor: 'pointer' }}
         />
       </svg>
 
@@ -1635,14 +1710,14 @@ function OnboardingOverlay({ onComplete, setView }: { onComplete: () => void, se
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black text-brand-orange uppercase tracking-widest">Step {step + 1} of {steps.length}</span>
-              <button onClick={onComplete} className="text-gray-300 hover:text-gray-500"><X size={16} /></button>
+              <button onClick={onComplete} className="cursor-pointer text-gray-300 hover:text-gray-500"><X size={16} /></button>
             </div>
             <h3 className="text-xl font-bold font-display text-gray-900">{currentStep.title}</h3>
             <p className="text-sm text-gray-500 font-medium leading-relaxed">{currentStep.description}</p>
             <div className="flex gap-2 pt-2">
               <button 
                 onClick={handleNext}
-                className="flex-1 h-12 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
+                className="cursor-pointer flex-1 h-12 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
               >
                 {currentStep.action} <ArrowRight size={16} />
               </button>

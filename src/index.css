@@ -29,7 +29,7 @@
 }
 
 .sidebar-link {
-  @apply flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white hover:text-brand-orange transition-all font-medium;
+  @apply flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white hover:text-brand-orange transition-all font-medium cursor-pointer;
 }
 
 .sidebar-link.active {
