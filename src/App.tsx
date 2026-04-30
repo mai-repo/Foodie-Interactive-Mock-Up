@@ -83,6 +83,7 @@ export default function App() {
               setShowProfile(true);
             }}
             onCloseProfile={() => setShowProfile(false)}
+            onSetMobileDetail={setShowMobileDetail}
           />
         )}
       </AnimatePresence>
@@ -340,6 +341,7 @@ export default function App() {
       {/* Mobile bottom navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 shadow-lg">
         <button
+          id="mob-nav-inbox"
           onClick={() => { setView('inbox'); setShowMobileDetail(false); }}
           className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'inbox' ? 'text-brand-orange' : 'text-gray-400'}`}
         >
@@ -347,6 +349,7 @@ export default function App() {
           <span className="text-[10px] font-bold">Buyers</span>
         </button>
         <button
+          id="mob-nav-campaigns"
           onClick={() => { setView('campaigns'); setSelectedCampaignId(null); }}
           className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'campaigns' ? 'text-brand-orange' : 'text-gray-400'}`}
         >
@@ -354,6 +357,7 @@ export default function App() {
           <span className="text-[10px] font-bold">Campaigns</span>
         </button>
         <button
+          id="mob-nav-profiles"
           onClick={() => setView('profiles')}
           className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors ${view === 'profiles' ? 'text-brand-orange' : 'text-gray-400'}`}
         >
@@ -1567,7 +1571,7 @@ function CampaignDetailView({ campaign: initialCampaign, onBack, onToggleProfile
   );
 }
 
-function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile }: { onComplete: () => void, setView: (v: View) => void, onOpenProfile: () => void, onCloseProfile: () => void }) {
+function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile, onSetMobileDetail }: { onComplete: () => void, setView: (v: View) => void, onOpenProfile: () => void, onCloseProfile: () => void, onSetMobileDetail: (show: boolean) => void }) {
   const [step, setStep] = useState(0);
   const [bounds, setBounds] = useState<DOMRect | null>(null);
 
@@ -1582,6 +1586,7 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
       title: "Smart Inbox",
       description: "Manage all incoming wholesale inquiries here. AI prepares drafts based on your current inventory.",
       targetId: "nav-inbox",
+      mobileTargetId: "mob-nav-inbox",
       action: "Next",
       onEnter: () => setView('inbox')
     },
@@ -1590,26 +1595,27 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
       description: "Each row shows the buyer, their company, and context signals like VIP status or price sensitivity.",
       targetId: "onboarding-message",
       action: "Next",
-      onEnter: () => setView('inbox')
+      onEnter: () => { setView('inbox'); onSetMobileDetail(false); }
     },
     {
       title: "Buyer Profile",
       description: "Click the buyer's photo at the top of any conversation to instantly pull up their full profile: order history, engagement score, relationship notes, and AI tone preferences.",
       targetId: "buyer-profile-toggle",
       action: "Next",
-      onEnter: () => setTimeout(onOpenProfile, 200)
+      onEnter: () => { onSetMobileDetail(true); setTimeout(onOpenProfile, 200); }
     },
     {
       title: "AI Draft Response",
       description: "Every inbound inquiry gets an AI-generated reply pre-loaded with relationship context. Edit the tone, tweak the copy, and hit Send. The AI learns from your changes.",
       targetId: "ai-draft-area",
       action: "Next",
-      onEnter: () => onCloseProfile()
+      onEnter: () => { onCloseProfile(); onSetMobileDetail(true); }
     },
     {
       title: "Targeted Outreach",
       description: "Launch personalized bulk campaigns for seasonal harvests. The AI writes a unique draft for each buyer based on their order history.",
       targetId: "nav-campaigns",
+      mobileTargetId: "mob-nav-campaigns",
       action: "Next",
       onEnter: () => setView('campaigns')
     },
@@ -1617,6 +1623,7 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
       title: "Your Profile",
       description: "Click the Profile icon anytime to see your portfolio value, draft campaigns, and pending outreach at a glance.",
       targetId: "nav-profiles",
+      mobileTargetId: "mob-nav-profiles",
       action: "Get Started",
       onEnter: () => setView('profiles')
     }
@@ -1626,20 +1633,39 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
 
   useEffect(() => {
     setBounds(null);
-    const updateBounds = () => {
-      if (currentStep.targetId) {
-        const el = document.getElementById(currentStep.targetId);
-        if (el) setBounds(el.getBoundingClientRect());
+
+    const measureBounds = () => {
+      const ids = [currentStep.targetId, (currentStep as any).mobileTargetId].filter(Boolean) as string[];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            setBounds(rect);
+            return;
+          }
+        }
+      }
+      setBounds(null);
+    };
+
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      // Steps 3 and 4 target elements inside MessageDetailView which is hidden on mobile
+      // when showMobileDetail is false — force it visible so bounds are measurable
+      if (isMobile && (step === 3 || step === 4)) {
+        onSetMobileDetail(true);
+        setTimeout(measureBounds, 100);
+      } else {
+        measureBounds();
       }
     };
 
-    // Initial measure with small delay for layout
-    const timer = setTimeout(updateBounds, 150);
-    
-    window.addEventListener('resize', updateBounds);
+    const timer = setTimeout(measureBounds, 150);
+    window.addEventListener('resize', handleResize);
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', updateBounds);
+      window.removeEventListener('resize', handleResize);
     };
   }, [step, currentStep.targetId]);
 
@@ -1656,7 +1682,7 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
       {/* Background Dimming with Hole */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto">
+      <svg className="absolute inset-0 pointer-events-auto" style={{ width: '100%', height: '100%' }}>
         <defs>
           <mask id="onboarding-mask">
             <rect width="100%" height="100%" fill="white" />
@@ -1680,6 +1706,19 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile 
           onClick={handleNext}
           style={{ cursor: 'pointer' }}
         />
+        {bounds && (
+          <rect
+            x={bounds.x - 8}
+            y={bounds.y - 8}
+            width={bounds.width + 16}
+            height={bounds.height + 16}
+            rx="12"
+            fill="none"
+            stroke="rgba(241,110,54,0.8)"
+            strokeWidth="2.5"
+            pointerEvents="none"
+          />
+        )}
       </svg>
 
       {/* Tooltip */}
