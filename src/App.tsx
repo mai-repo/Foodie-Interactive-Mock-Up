@@ -1715,17 +1715,22 @@ function OnboardingOverlay({ onComplete, setView, onOpenProfile, onCloseProfile,
         <motion.div 
           key={step}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ 
-            opacity: 1, 
-            y: bounds 
-              ? (bounds.bottom + 340 < window.innerHeight 
-                  ? bounds.bottom + 20 
-                  : (bounds.top > 340 ? bounds.top - 320 : Math.max(20, bounds.top + bounds.height + 20)))
+          animate={{
+            opacity: 1,
+            y: bounds
+              ? Math.max(20, Math.min(
+                  window.innerHeight - 320,
+                  bounds.bottom + 340 < window.innerHeight
+                    ? bounds.bottom + 20
+                    : bounds.top > 340
+                      ? bounds.top - 320
+                      : Math.round((window.innerHeight - 300) / 2)
+                ))
               : 0,
-            x: bounds 
+            x: bounds
               ? Math.max(20, Math.min(window.innerWidth - 340, bounds.left + (bounds.width / 2) - 160))
               : 0,
-            scale: 1 
+            scale: 1
           }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           style={{ 
